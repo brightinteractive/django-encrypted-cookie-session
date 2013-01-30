@@ -4,3 +4,8 @@ dist/
 build/
 *.egg-info/
 .tox/
+
+# IntelliJ user-specific files (the rest of .idea should be OK to check in
+# because it's not user specific)
+/.idea/workspace.xml
+*.iws

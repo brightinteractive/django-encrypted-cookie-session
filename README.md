@@ -8,7 +8,9 @@ Django Encrypted Session Cookie
 Adding to your Django Project
 =============================
 
-Requires Django 1.4.x.
+Requires Django 1.4.x,
+[M2Crypto](https://pypi.python.org/pypi/M2Crypto), and
+[m2secret](https://pypi.python.org/pypi/m2secret).
 
 Set `SESSION_ENGINE = 'encrypted_cookies'` in your Django settings.
 

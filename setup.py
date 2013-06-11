@@ -14,7 +14,7 @@ url = 'http://github.com/brightinteractive/django-encrypted-cookie-session/'
 author = 'Bright Interactive'
 author_email = 'francis@bright-interactive.co.uk'
 license = 'BSD'
-install_requires = ['Django>=1.4', 'pycrypto>=2.0']
+install_requires = ['Django>=1.4', 'M2Crypto>=0.21.1', 'm2secret>=0.1.1']
 
 
 def get_version(package):

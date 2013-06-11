@@ -22,7 +22,7 @@ class EncryptionTests(TestCase):
     def test_multiple_encrypt_decrypt(self):
         """
         Make sure that crypto isn't invalidly reusing a same cipher object
-        in a feedback mode (such as MODE_CFB)
+        in a feedback mode (this test was for the pycrypto implementation)
         """
         bytes = 'adsfasdfw34wras'
         encrypted = crypto.encrypt(bytes)

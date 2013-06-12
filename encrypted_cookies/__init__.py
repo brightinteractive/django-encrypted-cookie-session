@@ -29,6 +29,7 @@ class SessionStore(django.contrib.sessions.backends.signed_cookies.SessionStore)
         """
         try:
             return signing.loads(self.session_key,
+                # Create a signed cookie but with encrypted contents.
                 serializer=EncryptingPickleSerializer,
                 max_age=settings.SESSION_COOKIE_AGE,
                 salt='encrypted_cookies')

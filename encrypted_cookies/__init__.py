@@ -3,23 +3,32 @@
 # http://www.bright-interactive.com | info@bright-interactive.com
 from django.conf import settings
 from django.core import signing
-from django.contrib.sessions.backends.signed_cookies import PickleSerializer
-from encrypted_cookies import crypto
 import django.contrib.sessions.backends.signed_cookies
+from django.contrib.sessions.backends.signed_cookies import PickleSerializer
 
-__version__ = '1.0.0'
+from encrypted_cookies import crypto
+import django_paranoia.sessions
+
+__version__ = '1.1.0'
 
 
 class EncryptingPickleSerializer(PickleSerializer):
+    """
+    Serialize/unserialize data with AES encryption using a secret key.
+    """
+
     def dumps(self, obj):
-        return crypto.encrypt(super(EncryptingPickleSerializer, self).dumps(obj))
+        raw_data = super(EncryptingPickleSerializer, self).dumps(obj)
+        return crypto.encrypt(raw_data)
 
     def loads(self, data):
         decrypted_data = crypto.decrypt(data)
         return super(EncryptingPickleSerializer, self).loads(decrypted_data)
 
 
-class SessionStore(django.contrib.sessions.backends.signed_cookies.SessionStore):
+class SessionStore(
+        django.contrib.sessions.backends.signed_cookies.SessionStore,
+        django_paranoia.sessions.SessionStore):
 
     def load(self):
         """
@@ -37,6 +46,11 @@ class SessionStore(django.contrib.sessions.backends.signed_cookies.SessionStore)
             self.create()
         return {}
 
+    def save(self, must_create=False):
+        # Run django_paranoia pre-save logic.
+        self.prepare_data(must_create=must_create)
+        # Run the actual save logic from signed cookies.
+        return super(SessionStore, self).save(must_create=must_create)
 
     def _get_session_key(self):
         """

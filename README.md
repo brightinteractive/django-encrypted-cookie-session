@@ -8,11 +8,32 @@ Django Encrypted Session Cookie
 Adding to your Django Project
 =============================
 
-Requires Django 1.4.x,
-[M2Crypto](https://pypi.python.org/pypi/M2Crypto), and
-[m2secret](https://pypi.python.org/pypi/m2secret).
+This requires Django 1.4.x,
+[M2Crypto](https://pypi.python.org/pypi/M2Crypto),
+[m2secret](https://pypi.python.org/pypi/m2secret), and
+[django-paranoia][2]. The dependencies will be installed automatically.
 
-Set `SESSION_ENGINE = 'encrypted_cookies'` in your Django settings.
+Install it with [pip](http://www.pip-installer.org/):
+
+    pip install django-encrypted-cookie-session
+
+Activate the session engine by putting this in your Django settings:
+
+    SESSION_ENGINE = 'encrypted_cookies'
+
+Make sure [django-paranoia][2] middleware is installed in settings:
+
+    MIDDLEWARE_CLASSES = (
+        ...
+        'django_paranoia.middleware.Middleware',
+    )
+
+You may also want to hook up the reporters:
+
+    DJANGO_PARANOIA_REPORTERS = [
+        'django_paranoia.reporters.log',
+    ]
+
 
 Publishing releases to PyPI
 ===========================
@@ -49,6 +70,13 @@ To debug something weird, run it directly from the virtualenv like:
 Changelog
 =========
 
+1.1.0
+-----
+
+* Extended django-paranoia
+* Switched to M2Crypto and m2secret
+* Added support for Python 2.6, Python 2.7, and Django 1.5
+* Added more test coverage
 
 1.0.0
 -----
@@ -83,3 +111,4 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 [1]: http://www.bright-interactive.com/
+[2]: https://pypi.python.org/pypi/django-paranoia

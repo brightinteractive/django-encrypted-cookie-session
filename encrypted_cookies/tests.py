@@ -2,24 +2,30 @@
 # (c) 2013 Bright Interactive Limited. All rights reserved.
 # http://www.bright-interactive.com | info@bright-interactive.com
 from django.test import TestCase
+from django.test.client import RequestFactory
 from django.test.utils import override_settings
 
-from encrypted_cookies import crypto
+import mock
+
+from encrypted_cookies import EncryptingPickleSerializer
 from encrypted_cookies import SessionStore
 
 
 class EncryptionTests(TestCase):
 
+    def setUp(self):
+        self.pkl = EncryptingPickleSerializer()
+
     @override_settings(SECRET_KEY='')
     def test_empty_secret_key_not_allowed(self):
         with self.assertRaises(ValueError):
-            crypto.encrypt('summat')
+            self.pkl.dumps('summat')
 
     def test_encrypt_decrypt(self):
         bytes = 'adsfasdfw34wras'
-        encrypted = crypto.encrypt(bytes)
+        encrypted = self.pkl.dumps(bytes)
         self.assertNotEqual(bytes, encrypted)
-        decrypted = crypto.decrypt(encrypted)
+        decrypted = self.pkl.loads(encrypted)
         self.assertEqual(bytes, decrypted)
 
     def test_multiple_encrypt_decrypt(self):
@@ -28,16 +34,18 @@ class EncryptionTests(TestCase):
         in a feedback mode (this test was for the pycrypto implementation)
         """
         bytes = 'adsfasdfw34wras'
-        encrypted = crypto.encrypt(bytes)
-        crypto.encrypt('asdf')
-        decrypted = crypto.decrypt(encrypted)
+        encrypted = self.pkl.dumps(bytes)
+        self.pkl.dumps('asdf')
+        decrypted = self.pkl.loads(encrypted)
         self.assertEqual(bytes, decrypted)
 
 
-class SessionTests(TestCase):
+class SessionStoreTests(TestCase):
 
     def setUp(self):
-        self.sess = SessionStore()
+        req = RequestFactory().get('/')
+        req.META['REMOTE_ADDR'] = '10.0.0.1'
+        self.sess = SessionStore(request_meta=req.META.copy())
 
     def test_save_load(self):
         self.sess['secret'] = 'laser beams'
@@ -53,3 +61,30 @@ class SessionTests(TestCase):
             stor = self.sess.load()
         # The BadSignature error is ignored and the session is reset.
         self.assertEqual(dict(stor.items()), {})
+
+    @mock.patch('encrypted_cookies.EncryptingPickleSerializer')
+    def test_use_encrypted_pickles(self, PicklerClass):
+        pickler = mock.Mock()
+        PicklerClass.return_value = pickler
+        pickler.dumps.return_value = '<data>'
+
+        self.sess.save()
+        self.sess.load()
+
+        # Because there is multiple inheritance going on now, make
+        # sure that the encrypted pickler is used.
+        assert pickler.dumps.called
+        assert pickler.loads.called
+
+    def test_cache_key(self):
+        ck = self.sess.cache_key
+        assert ck.startswith('django_paranoid'), (
+            'Unexpected cache key: %s' % ck)
+
+    @mock.patch('django_paranoia.sessions.warning.send')
+    def test_paranoia_catches_tampering(self, warn):
+        req = RequestFactory().get('/')
+        req.META['REMOTE_ADDR'] = '192.168.1.1'  # alter this value.
+        self.sess.save()
+        self.sess.check_request_data(request=req)
+        assert warn.called

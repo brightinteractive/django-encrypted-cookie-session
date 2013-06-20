@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # (c) 2013 Bright Interactive Limited. All rights reserved.
 # http://www.bright-interactive.com | info@bright-interactive.com
+from django.core import signing
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 
 import mock
 
-from encrypted_cookies import EncryptingPickleSerializer
-from encrypted_cookies import SessionStore
+from encrypted_cookies import EncryptingPickleSerializer, SessionStore
 
 
 class EncryptionTests(TestCase):
@@ -16,7 +16,7 @@ class EncryptionTests(TestCase):
     def setUp(self):
         self.pkl = EncryptingPickleSerializer()
 
-    @override_settings(SECRET_KEY='')
+    @override_settings(ENCRYPTED_COOKIE_KEY='')
     def test_empty_secret_key_not_allowed(self):
         with self.assertRaises(ValueError):
             self.pkl.dumps('summat')
@@ -54,12 +54,30 @@ class SessionStoreTests(TestCase):
         self.assertEqual(stor['secret'], 'laser beams')
 
     def test_wrong_key(self):
-        with self.settings(SECRET_KEY='the first key'):
+        with self.settings(ENCRYPTED_COOKIE_KEY='the first key'):
             self.sess['secret'] = 'laser beams'
             self.sess.save()
-        with self.settings(SECRET_KEY='the second key'):
+        with self.settings(ENCRYPTED_COOKIE_KEY='the second key'):
             stor = self.sess.load()
+        # The DecryptionError is ignored and the session is reset.
+        self.assertEqual(dict(stor.items()), {})
+
+    @mock.patch('encrypted_cookies.signing.loads')
+    def test_bad_signature(self, loader):
+        loader.side_effect = signing.BadSignature
+        self.sess['secret'] = 'laser beams'
+        self.sess.save()
+        stor = self.sess.load()
         # The BadSignature error is ignored and the session is reset.
+        self.assertEqual(dict(stor.items()), {})
+
+    @mock.patch('encrypted_cookies.signing.loads')
+    def test_bad_signing_value(self, loader):
+        loader.side_effect = ValueError
+        self.sess['secret'] = 'laser beams'
+        self.sess.save()
+        stor = self.sess.load()
+        # The ValueError is ignored and the session is reset.
         self.assertEqual(dict(stor.items()), {})
 
     @mock.patch('encrypted_cookies.EncryptingPickleSerializer')

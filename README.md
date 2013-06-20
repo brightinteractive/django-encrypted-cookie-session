@@ -21,6 +21,12 @@ Activate the session engine by putting this in your Django settings:
 
     SESSION_ENGINE = 'encrypted_cookies'
 
+Add a strong random key to use for encryption. Make sure it is at least 32
+characters long and instead of banging on your keyboard take care to make sure
+it is really random. You should change this key periodically.
+
+    ENCRYPTED_COOKIE_KEY = 'really-long-random-string'
+
 Make sure [django-paranoia][2] middleware is installed in settings:
 
     MIDDLEWARE_CLASSES = (
@@ -73,6 +79,8 @@ Changelog
 1.1.0
 -----
 
+* Switched to ENCRYPTED_COOKIE_KEY instead of SECRET_KEY to encourage care and
+  isolation of the key. You need to add ENCRYPTED_COOKIE_KEY to your settings.
 * Extended django-paranoia
 * Switched to M2Crypto and m2secret
 * Added support for Python 2.6, Python 2.7, and Django 1.5

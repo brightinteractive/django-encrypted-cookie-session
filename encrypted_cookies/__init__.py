@@ -8,6 +8,7 @@ from django.contrib.sessions.backends.signed_cookies import PickleSerializer
 
 from encrypted_cookies import crypto
 import django_paranoia.sessions
+import m2secret
 
 __version__ = '1.1.0'
 
@@ -42,7 +43,7 @@ class SessionStore(
                 serializer=EncryptingPickleSerializer,
                 max_age=settings.SESSION_COOKIE_AGE,
                 salt='encrypted_cookies')
-        except (signing.BadSignature, ValueError):
+        except (signing.BadSignature, m2secret.DecryptionError, ValueError):
             self.create()
         return {}
 

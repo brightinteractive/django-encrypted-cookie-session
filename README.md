@@ -8,12 +8,28 @@ Django Encrypted Session Cookie
 Adding to your Django Project
 =============================
 
-This requires Django 1.4.x,
-[M2Crypto](https://pypi.python.org/pypi/M2Crypto),
-[m2secret](https://pypi.python.org/pypi/m2secret), and
-[django-paranoia][2]. The dependencies will be installed automatically.
+You'll need
+[Django](https://djangoproject.com/) 1.4.x or Django 1.5.x and
+[django-paranoia][2]. These dependencies will be installed automatically.
 
-Install it with [pip](http://www.pip-installer.org/):
+Next you need to install either
+[M2Crypto](https://pypi.python.org/pypi/M2Crypto)
+and [m2secret](https://pypi.python.org/pypi/m2secret)
+*or*
+[pycrypto](https://pypi.python.org/pypi/pycrypto).
+Neither of these will be installed automatically so
+here are some install commands you can follow using the
+[pip](http://www.pip-installer.org/) installer.
+
+Either get M2Crypto like this:
+
+    pip install 'M2Crypto>=0.21.1' 'm2secret>=0.1.1'
+
+or get pycrypto like this:
+
+    pip install 'pycrypto>=2.0'
+
+then install the main package:
 
     pip install django-encrypted-cookie-session
 
@@ -67,7 +83,7 @@ need 2.6 as well to run all environments. Run the tests like this:
 
 To run the tests against a single environment:
 
-    tox -e py27-django15
+    tox -e py27-django15-pyc
 
 To debug something weird, run it directly from the virtualenv like:
 
@@ -82,7 +98,7 @@ Changelog
 * Switched to ENCRYPTED_COOKIE_KEY instead of SECRET_KEY to encourage care and
   isolation of the key. You need to add ENCRYPTED_COOKIE_KEY to your settings.
 * Extended django-paranoia
-* Switched to M2Crypto and m2secret
+* Added optional support for M2Crypto and m2secret
 * Added support for Python 2.6, Python 2.7, and Django 1.5
 * Added more test coverage
 

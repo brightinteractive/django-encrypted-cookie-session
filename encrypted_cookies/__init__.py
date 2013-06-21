@@ -5,10 +5,20 @@ from django.conf import settings
 from django.core import signing
 import django.contrib.sessions.backends.signed_cookies
 from django.contrib.sessions.backends.signed_cookies import PickleSerializer
+try:
+    from django.utils.six.moves import cPickle as pickle
+except ImportError:
+    import pickle
 
 from encrypted_cookies import crypto
 import django_paranoia.sessions
-import m2secret
+
+try:
+    import m2secret
+    M2DecryptionError = m2secret.DecryptionError
+except ImportError:
+    class M2DecryptionError(Exception):
+        """Stub exception when not using M2Crypto."""
 
 __version__ = '1.1.0'
 
@@ -43,7 +53,8 @@ class SessionStore(
                 serializer=EncryptingPickleSerializer,
                 max_age=settings.SESSION_COOKIE_AGE,
                 salt='encrypted_cookies')
-        except (signing.BadSignature, m2secret.DecryptionError, ValueError):
+        except (signing.BadSignature, pickle.UnpicklingError,
+                M2DecryptionError, ValueError):
             self.create()
         return {}
 

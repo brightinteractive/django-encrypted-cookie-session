@@ -4,7 +4,6 @@
 import hashlib
 import sys
 import traceback
-import warnings
 
 from django.conf import settings
 
@@ -33,8 +32,6 @@ if not use_pycrypto and not use_m2crypto:
 
 
 if not getattr(settings, 'ENCRYPTED_COOKIE_KEY', None):
-    warnings.warn('You must set ENCRYPTED_COOKIE_KEY; '
-                  'falling back to SECRET_KEY', DeprecationWarning)
     settings.ENCRYPTED_COOKIE_KEY = settings.SECRET_KEY
 
 

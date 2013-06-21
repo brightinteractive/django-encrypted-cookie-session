@@ -5,9 +5,11 @@ from django.core import signing
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
+from django.utils.unittest.case import skipUnless
 
 import mock
 
+from encrypted_cookies import get_paranoid
 from encrypted_cookies import EncryptingPickleSerializer, SessionStore
 
 
@@ -45,7 +47,10 @@ class SessionStoreTests(TestCase):
     def setUp(self):
         req = RequestFactory().get('/')
         req.META['REMOTE_ADDR'] = '10.0.0.1'
-        self.sess = SessionStore(request_meta=req.META.copy())
+        if get_paranoid:
+            self.sess = SessionStore(request_meta=req.META.copy())
+        else:
+            self.sess = SessionStore()
 
     def test_save_load(self):
         self.sess['secret'] = 'laser beams'
@@ -94,15 +99,17 @@ class SessionStoreTests(TestCase):
         assert pickler.dumps.called
         assert pickler.loads.called
 
+    @skipUnless(get_paranoid, 'django_paranoia not installed')
     def test_cache_key(self):
         ck = self.sess.cache_key
         assert ck.startswith('django_paranoid'), (
             'Unexpected cache key: %s' % ck)
 
-    @mock.patch('django_paranoia.sessions.warning.send')
-    def test_paranoia_catches_tampering(self, warn):
+    @skipUnless(get_paranoid, 'django_paranoia not installed')
+    def test_paranoia_catches_tampering(self):
         req = RequestFactory().get('/')
         req.META['REMOTE_ADDR'] = '192.168.1.1'  # alter this value.
-        self.sess.save()
-        self.sess.check_request_data(request=req)
+        with mock.patch('django_paranoia.sessions.warning.send') as warn:
+            self.sess.save()
+            self.sess.check_request_data(request=req)
         assert warn.called

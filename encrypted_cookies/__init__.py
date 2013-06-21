@@ -11,7 +11,17 @@ except ImportError:
     import pickle
 
 from encrypted_cookies import crypto
-import django_paranoia.sessions
+
+try:
+    import django_paranoia.sessions
+    get_paranoid = True
+except ImportError:
+    for mc in settings.MIDDLEWARE_CLASSES:
+        if 'django_paranoia' in mc:
+            # This means we probably hit a legitimate ImportError
+            # so re-raise it.
+            raise
+    get_paranoid = False
 
 try:
     import m2secret
@@ -37,9 +47,25 @@ class EncryptingPickleSerializer(PickleSerializer):
         return super(EncryptingPickleSerializer, self).loads(decrypted_data)
 
 
-class SessionStore(
-        django.contrib.sessions.backends.signed_cookies.SessionStore,
-        django_paranoia.sessions.SessionStore):
+if get_paranoid:
+    # Django paranoia unfortunately collides with some session logic
+    # so we need to integrate the two together.
+    class BaseSessionStore(
+            django.contrib.sessions.backends.signed_cookies.SessionStore,
+            django_paranoia.sessions.SessionStore):
+
+        def save(self, must_create=False):
+            # Run django_paranoia pre-save logic.
+            self.prepare_data(must_create=must_create)
+            # Run the actual save logic from signed cookies.
+            return super(BaseSessionStore, self).save(must_create=must_create)
+else:
+    class BaseSessionStore(
+            django.contrib.sessions.backends.signed_cookies.SessionStore):
+        pass
+
+
+class SessionStore(BaseSessionStore):
 
     def load(self):
         """
@@ -57,12 +83,6 @@ class SessionStore(
                 M2DecryptionError, ValueError):
             self.create()
         return {}
-
-    def save(self, must_create=False):
-        # Run django_paranoia pre-save logic.
-        self.prepare_data(must_create=must_create)
-        # Run the actual save logic from signed cookies.
-        return super(SessionStore, self).save(must_create=must_create)
 
     def _get_session_key(self):
         """

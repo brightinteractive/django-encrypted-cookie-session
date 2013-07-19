@@ -25,7 +25,7 @@ which is automatically installed for you.
 You can optionally install [django-paranoia][2] which will be
 integrated into the session engine. Add it like this:
 
-    pip install 'django-paranoia>=0.1.8.5'
+    pip install 'django-paranoia>=0.1.8.6'
 
 You must install either
 [M2Crypto](https://pypi.python.org/pypi/M2Crypto)

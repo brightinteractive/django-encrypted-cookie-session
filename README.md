@@ -28,13 +28,13 @@ integrated into the session engine. Add it like this:
     pip install 'django-paranoia>=0.1.8.6'
 
 You must install either
+[pycrypto](https://pypi.python.org/pypi/pycrypto)
+*or* both
 [M2Crypto](https://pypi.python.org/pypi/M2Crypto)
-and [m2secret](https://pypi.python.org/pypi/m2secret)
-*or*
-[pycrypto](https://pypi.python.org/pypi/pycrypto).
+and [m2secret](https://pypi.python.org/pypi/m2secret).
 Neither of these will be installed automatically.
 
-Either get M2Crypto like this:
+Get M2Crypto like this:
 
     pip install 'M2Crypto>=0.21.1' 'm2secret>=0.1.1'
 

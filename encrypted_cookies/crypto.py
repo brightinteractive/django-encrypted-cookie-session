@@ -49,17 +49,17 @@ def pycrypto_cipher():
     return cipher
 
 
-def encrypt(bytes):
+def encrypt(plaintext_bytes):
     if not settings.ENCRYPTED_COOKIE_KEY:
         raise ValueError('The ENCRYPTED_COOKIE_KEY setting must not be empty.')
 
     if use_m2crypto:
         secret = Secret()
-        secret.encrypt(bytes, settings.ENCRYPTED_COOKIE_KEY)
+        secret.encrypt(plaintext_bytes, settings.ENCRYPTED_COOKIE_KEY)
         return secret.serialize()
     else:
         cipher = pycrypto_cipher()
-        return cipher.encrypt(bytes)
+        return cipher.encrypt(plaintext_bytes)
 
 
 def decrypt(encrypted_bytes):

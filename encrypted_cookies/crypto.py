@@ -31,16 +31,19 @@ if not use_pycrypto and not use_m2crypto:
                       'M2Crypto, or pycrypto')
 
 
-if not getattr(settings, 'ENCRYPTED_COOKIE_KEY', None):
-    settings.ENCRYPTED_COOKIE_KEY = settings.SECRET_KEY
+def encrypted_cookie_key():
+    key = getattr(settings, 'ENCRYPTED_COOKIE_KEY', None)
+    if not key:
+        key = settings.SECRET_KEY
+    return key
 
 
 def pycrypto_cipher():
     # compute a 32-byte key
-    key = hashlib.sha256(settings.ENCRYPTED_COOKIE_KEY).digest()
+    key = hashlib.sha256(encrypted_cookie_key()).digest()
     assert len(key) == 32
     # compute a 16-byte IV
-    IV = hashlib.md5(settings.ENCRYPTED_COOKIE_KEY).digest()
+    IV = hashlib.md5(encrypted_cookie_key()).digest()
     assert len(IV) == 16
 
     # create an AES cipher, use CFB mode so we don't have to worry about
@@ -50,12 +53,13 @@ def pycrypto_cipher():
 
 
 def encrypt(bytes):
-    if not settings.ENCRYPTED_COOKIE_KEY:
-        raise ValueError('The ENCRYPTED_COOKIE_KEY setting must not be empty.')
+    key = encrypted_cookie_key()
+    if not key:
+        raise ValueError('The ENCRYPTED_COOKIE_KEY and SECRET_KEY settings must not both be empty.')
 
     if use_m2crypto:
         secret = Secret()
-        secret.encrypt(bytes, settings.ENCRYPTED_COOKIE_KEY)
+        secret.encrypt(bytes, key)
         return secret.serialize()
     else:
         cipher = pycrypto_cipher()
@@ -66,7 +70,7 @@ def decrypt(encrypted_bytes):
     if use_m2crypto:
         secret = Secret()
         secret.deserialize(encrypted_bytes)
-        return secret.decrypt(settings.ENCRYPTED_COOKIE_KEY)
+        return secret.decrypt(encrypted_cookie_key())
     else:
         cipher = pycrypto_cipher()
         return cipher.decrypt(encrypted_bytes)

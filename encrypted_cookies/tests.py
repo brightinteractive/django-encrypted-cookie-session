@@ -24,22 +24,22 @@ class EncryptionTests(TestCase):
             self.pkl.dumps('summat')
 
     def test_encrypt_decrypt(self):
-        bytes = 'adsfasdfw34wras'
-        encrypted = self.pkl.dumps(bytes)
-        self.assertNotEqual(bytes, encrypted)
+        plaintext_bytes = 'adsfasdfw34wras'
+        encrypted = self.pkl.dumps(plaintext_bytes)
+        self.assertNotEqual(plaintext_bytes, encrypted)
         decrypted = self.pkl.loads(encrypted)
-        self.assertEqual(bytes, decrypted)
+        self.assertEqual(plaintext_bytes, decrypted)
 
     def test_multiple_encrypt_decrypt(self):
         """
         Make sure that crypto isn't invalidly reusing a same cipher object
         in a feedback mode (this test was for the pycrypto implementation)
         """
-        bytes = 'adsfasdfw34wras'
-        encrypted = self.pkl.dumps(bytes)
+        plaintext_bytes = 'adsfasdfw34wras'
+        encrypted = self.pkl.dumps(plaintext_bytes)
         self.pkl.dumps('asdf')
         decrypted = self.pkl.loads(encrypted)
-        self.assertEqual(bytes, decrypted)
+        self.assertEqual(plaintext_bytes, decrypted)
 
 
 class SessionStoreTests(TestCase):

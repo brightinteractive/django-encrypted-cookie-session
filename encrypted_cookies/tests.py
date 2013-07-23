@@ -18,7 +18,7 @@ class EncryptionTests(TestCase):
     def setUp(self):
         self.pkl = EncryptingPickleSerializer()
 
-    @override_settings(ENCRYPTED_COOKIE_KEY='')
+    @override_settings(SECRET_KEY='', ENCRYPTED_COOKIE_KEY='')
     def test_empty_secret_key_not_allowed(self):
         with self.assertRaises(ValueError):
             self.pkl.dumps('summat')

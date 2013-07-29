@@ -72,6 +72,21 @@ You may also want to hook up the reporters:
         'django_paranoia.reporters.log',
     ]
 
+Logging
+=======
+
+This module outputs some logging in the `encrypted_cookie` channel.
+Here is a settings example for enabling logging in Django:
+
+    LOGGING = {
+        'loggers': {
+            'encrypted_cookie': {
+                'level': logging.INFO,
+                'handlers': ['console']
+            }
+        }
+    }
+
 
 Publishing releases to PyPI
 ===========================

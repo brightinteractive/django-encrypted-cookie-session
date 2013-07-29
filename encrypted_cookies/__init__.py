@@ -3,14 +3,15 @@
 # http://www.bright-interactive.com | info@bright-interactive.com
 from django.conf import settings
 from django.core import signing
-import django.contrib.sessions.backends.signed_cookies
 from django.contrib.sessions.backends.signed_cookies import PickleSerializer
+import django.contrib.sessions.backends.signed_cookies
+import logging
+
+from encrypted_cookies import crypto
 try:
     from django.utils.six.moves import cPickle as pickle
 except ImportError:
     import pickle
-
-from encrypted_cookies import crypto
 
 try:
     import django_paranoia.sessions
@@ -31,6 +32,8 @@ except ImportError:
         """Stub exception when not using M2Crypto."""
 
 __version__ = '1.1.0'
+
+log = logging.getLogger(__name__)
 
 
 class EncryptingPickleSerializer(PickleSerializer):
@@ -92,6 +95,8 @@ class SessionStore(BaseSessionStore):
         session key.
         """
         session_cache = getattr(self, '_session_cache', {})
-        return signing.dumps(session_cache, compress=True,
+        data = signing.dumps(session_cache, compress=True,
             salt='encrypted_cookies',
             serializer=EncryptingPickleSerializer)
+        log.info('encrypted session cookie is %s bytes' % len(data))
+        return data

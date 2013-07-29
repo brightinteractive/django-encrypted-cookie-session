@@ -59,18 +59,37 @@ it is really random. You should change this key periodically.
 If you don't declare this setting the package will use `SECRET_KEY` so just
 double check that you have a long random string in there.
 
-If you installed [django-paranoia][2], ensure its middleware is in settings:
+If you installed [django-paranoia][2], ensure its middleware is in settings.
+See the [django-paranoia][2] docs for more info.
 
     MIDDLEWARE_CLASSES = (
         ...
         'django_paranoia.middleware.Middleware',
     )
 
-You may also want to hook up the reporters:
+Cookie Size
+===========
 
-    DJANGO_PARANOIA_REPORTERS = [
-        'django_paranoia.reporters.log',
-    ]
+Most browsers limit cookie size to 4092 bytes (name + value).
+Most servers also have a limit to the request/response header size
+they can process.
+It's pretty easy to hit these limits since an encrypted cookie takes all
+sesssion data, serializes it, and encrypts it. You can compress the value
+(using
+[zlib](http://docs.python.org/2/library/zlib.html#module-zlib))
+with this setting:
+
+    COMPRESS_ENCRYPTED_COOKIE = True
+
+The default compression level is 6 but you can adjust that for speed/accuracy
+like this:
+
+    ENCRYPTED_COOKIE_COMPRESSION_LEVEL = 1
+
+Also note that the cookie value will be sent to your server on every request so
+size may also affect network performance. For best results, limit the amount of
+data you store in the session. If you turn on logging, you'll see the byte size
+of each session cookie.
 
 Logging
 =======

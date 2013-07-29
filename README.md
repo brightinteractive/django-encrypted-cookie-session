@@ -75,12 +75,12 @@ You may also want to hook up the reporters:
 Logging
 =======
 
-This module outputs some logging in the `encrypted_cookie` channel.
+This module outputs some logging in the `encrypted_cookies` channel.
 Here is a settings example for enabling logging in Django:
 
     LOGGING = {
         'loggers': {
-            'encrypted_cookie': {
+            'encrypted_cookies': {
                 'level': logging.INFO,
                 'handlers': ['console']
             }

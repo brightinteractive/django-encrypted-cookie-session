@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 # (c) 2013 Bright Interactive Limited. All rights reserved.
 # http://www.bright-interactive.com | info@bright-interactive.com
-import logging
-
 from django.conf import settings
 from django.core import signing
-import django.contrib.sessions.backends.signed_cookies
 from django.contrib.sessions.backends.signed_cookies import PickleSerializer
+import django.contrib.sessions.backends.signed_cookies
+import logging
+
+from encrypted_cookies import crypto
 try:
     from django.utils.six.moves import cPickle as pickle
 except ImportError:
     import pickle
-
-from encrypted_cookies import crypto
 
 try:
     import django_paranoia.sessions

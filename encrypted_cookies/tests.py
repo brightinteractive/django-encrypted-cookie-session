@@ -41,6 +41,23 @@ class EncryptionTests(TestCase):
         decrypted = self.pkl.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 
+    @override_settings(COMPRESS_ENCRYPTED_COOKIE=True)
+    def test_compressed_encrypt_decrypt(self):
+        plaintext_bytes = 'adsfasdfw34wras'
+        encrypted = self.pkl.dumps(plaintext_bytes)
+        self.assertNotEqual(plaintext_bytes, encrypted)
+        decrypted = self.pkl.loads(encrypted)
+        self.assertEqual(plaintext_bytes, decrypted)
+
+    def test_recover_from_uncompressed_value(self):
+        plaintext_bytes = 'adsfasdfw34wras'
+        with override_settings(COMPRESS_ENCRYPTED_COOKIE=False):
+            encrypted = self.pkl.dumps(plaintext_bytes)
+        with override_settings(COMPRESS_ENCRYPTED_COOKIE=True):
+            # Make sure this doesn't raise an exception.
+            decrypted = self.pkl.loads(encrypted)
+        self.assertEqual(plaintext_bytes, decrypted)
+
 
 class SessionStoreTests(TestCase):
 

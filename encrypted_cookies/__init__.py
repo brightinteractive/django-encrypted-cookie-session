@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # (c) 2013 Bright Interactive Limited. All rights reserved.
 # http://www.bright-interactive.com | info@bright-interactive.com
+import zlib
+
 from django.conf import settings
 from django.core import signing
 from django.contrib.sessions.backends.signed_cookies import PickleSerializer
@@ -43,10 +45,22 @@ class EncryptingPickleSerializer(PickleSerializer):
 
     def dumps(self, obj):
         raw_data = super(EncryptingPickleSerializer, self).dumps(obj)
+        if getattr(settings, 'COMPRESS_ENCRYPTED_COOKIE', False):
+            level = getattr(settings, 'ENCRYPTED_COOKIE_COMPRESSION_LEVEL', 6)
+            raw_data = zlib.compress(raw_data, level)
         return crypto.encrypt(raw_data)
 
     def loads(self, data):
         decrypted_data = crypto.decrypt(data)
+        if getattr(settings, 'COMPRESS_ENCRYPTED_COOKIE', False):
+            try:
+                decrypted_data = zlib.decompress(decrypted_data)
+            except zlib.error, exc:
+                # This probably means the server setting changed after a client
+                # received the cookie. It should be fixed on the next request.
+                log.warning('Could not decompress cookie value: %s: %s'
+                            % (exc.__class__.__name__, exc))
+
         return super(EncryptingPickleSerializer, self).loads(decrypted_data)
 
 

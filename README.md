@@ -153,6 +153,7 @@ Changelog
 * Added optional support for M2Crypto and m2secret
 * Added support for Python 2.6, Python 2.7, and Django 1.5
 * Added more test coverage
+* Compress cookie value before encrypting
 
 1.0.0
 -----

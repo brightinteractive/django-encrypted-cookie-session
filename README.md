@@ -67,6 +67,15 @@ See the [django-paranoia][2] docs for more info.
         'django_paranoia.middleware.Middleware',
     )
 
+Beware! If you don't use an HTTPS URL for local development
+(you probably don't) then you may need to set this:
+
+    SESSION_COOKIE_SECURE = False
+
+Without it you might see a KeyError for session data because it
+won't be saving properly. Obviously, in production where you use
+an HTTPS URL you should make sure cookies are always secure.
+
 Cookie Size
 ===========
 

@@ -5,7 +5,12 @@ import zlib
 
 from django.conf import settings
 from django.core import signing
-from django.contrib.sessions.backends.signed_cookies import PickleSerializer
+try:
+    # Django 1.5.x support
+    from django.contrib.sessions.serializers import PickleSerializer
+except ImportError:
+    # Legacy Django support
+    from django.contrib.sessions.backends.signed_cookies import PickleSerializer
 import django.contrib.sessions.backends.signed_cookies
 import logging
 

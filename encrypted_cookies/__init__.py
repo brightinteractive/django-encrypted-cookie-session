@@ -38,7 +38,7 @@ except ImportError:
     class M2DecryptionError(Exception):
         """Stub exception when not using M2Crypto."""
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 log = logging.getLogger(__name__)
 

@@ -152,6 +152,11 @@ To debug something weird, run it directly from the virtualenv like:
 Changelog
 =========
 
+1.1.1
+-----
+
+* Fix ImportError with Django 1.5.3+
+
 1.1.0
 -----
 

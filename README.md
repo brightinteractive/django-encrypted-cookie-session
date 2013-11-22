@@ -115,6 +115,17 @@ Here is a settings example for enabling logging in Django:
         }
     }
 
+Debugging
+=========
+
+If you need to debug an issue with sessions on a live system,
+you can open a Python shell on the server and decrypt a cookie like this:
+
+    from django.core import signing
+    from encrypted_cookies import EncryptingPickleSerializer
+
+    signing.loads("<cookie_value>", salt='encrypted_cookies', serializer=EncryptingPickleSerializer)
+
 
 Publishing releases to PyPI
 ===========================

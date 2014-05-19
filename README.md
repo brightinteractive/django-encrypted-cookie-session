@@ -27,24 +27,13 @@ integrated into the session engine. Add it like this:
 
     pip install 'django-paranoia>=0.1.8.6'
 
-You must install either
-[pycrypto](https://pypi.python.org/pypi/pycrypto)
-*or* both
-[M2Crypto](https://pypi.python.org/pypi/M2Crypto)
-and [m2secret](https://pypi.python.org/pypi/m2secret).
-Neither of these will be installed automatically.
+django-encrypted-cookie-session uses M2Crypto, which requires SWIG to build,
+so install SWIG before attempting to install django-encrypted-cookie-session:
 
-Get M2Crypto like this:
-
-    # M2Crypto requires swig, install it like this on OS X with MacPorts:
+    # OS X with MacPorts:
     sudo port install swig-python
-    # ...or like this on Debian:
+    # Debian:
     sudo apt-get install swig
-    pip install 'M2Crypto>=0.21.1' 'm2secret>=0.1.1'
-
-or get pycrypto like this:
-
-    pip install 'pycrypto>=2.0'
 
 then install the main package:
 
@@ -158,7 +147,7 @@ need 2.6 as well to run all environments. Run the tests like this:
 
 To run the tests against a single environment:
 
-    tox -e py27-django15-pyc
+    tox -e py27-django15-m2c
 
 To debug something weird, run it directly from the virtualenv like:
 
@@ -166,6 +155,14 @@ To debug something weird, run it directly from the virtualenv like:
 
 Changelog
 =========
+
+2.0.0
+-----
+
+* Drop support for pycrypto to fix
+  https://github.com/brightinteractive/django-encrypted-cookie-session/issues/11
+  and
+  https://github.com/brightinteractive/django-encrypted-cookie-session/issues/12
 
 1.1.1
 -----

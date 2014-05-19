@@ -5,6 +5,7 @@ import zlib
 
 from django.conf import settings
 from django.core import signing
+from m2secret import DecryptionError as M2DecryptionError
 try:
     # Django 1.5.x support
     from django.contrib.sessions.serializers import PickleSerializer
@@ -31,14 +32,8 @@ except ImportError:
             raise
     get_paranoid = False
 
-try:
-    import m2secret
-    M2DecryptionError = m2secret.DecryptionError
-except ImportError:
-    class M2DecryptionError(Exception):
-        """Stub exception when not using M2Crypto."""
 
-__version__ = '1.1.1'
+__version__ = '2.0.0'
 
 log = logging.getLogger(__name__)
 

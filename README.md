@@ -36,6 +36,10 @@ Neither of these will be installed automatically.
 
 Get M2Crypto like this:
 
+    # M2Crypto requires swig, install it like this on OS X with MacPorts:
+    sudo port install swig-python
+    # ...or like this on Debian:
+    sudo apt-get install swig
     pip install 'M2Crypto>=0.21.1' 'm2secret>=0.1.1'
 
 or get pycrypto like this:

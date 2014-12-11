@@ -9,7 +9,7 @@ import sys
 
 name = 'django-encrypted-cookie-session'
 package = 'encrypted_cookies'
-description = ''
+description = 'Encrypted cookie session backend.',
 url = 'http://github.com/brightinteractive/django-encrypted-cookie-session/'
 author = 'Bright Interactive'
 author_email = 'francis@bright-interactive.co.uk'

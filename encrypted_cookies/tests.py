@@ -1,26 +1,42 @@
 # -*- coding: utf-8 -*-
 # (c) 2013 Bright Interactive Limited. All rights reserved.
 # http://www.bright-interactive.com | info@bright-interactive.com
+import cStringIO
+
 from django.core import signing
+from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
-from django.utils.unittest.case import skipUnless
+try:
+    from django.test.utils import skipUnless
+except ImportError:
+    # For Django < 1.6:
+    from django.utils.unittest.case import skipUnless
 
+from cryptography.fernet import Fernet
 import mock
 
-from encrypted_cookies import get_paranoid
-from encrypted_cookies import EncryptingPickleSerializer, SessionStore
+from encrypted_cookies import (
+    keygen,
+    EncryptingPickleSerializer,
+    SessionStore,
+)
 
 
-class EncryptionTests(TestCase):
+@override_settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key()])
+class Base(TestCase):
+    pass
+
+
+class EncryptionTests(Base):
 
     def setUp(self):
         self.pkl = EncryptingPickleSerializer()
 
-    @override_settings(SECRET_KEY='', ENCRYPTED_COOKIE_KEY='')
-    def test_empty_secret_key_not_allowed(self):
-        with self.assertRaises(ValueError):
+    @override_settings(ENCRYPTED_COOKIE_KEYS=None, ENCRYPTED_COOKIE_KEY='')
+    def test_empty_key_not_allowed(self):
+        with self.assertRaises(ImproperlyConfigured):
             self.pkl.dumps('summat')
 
     def test_encrypt_decrypt(self):
@@ -30,16 +46,18 @@ class EncryptionTests(TestCase):
         decrypted = self.pkl.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 
-    def test_multiple_encrypt_decrypt(self):
-        """
-        Make sure that crypto isn't invalidly reusing a same cipher object
-        in a feedback mode (this test was for the pycrypto implementation)
-        """
+    @override_settings(ENCRYPTED_COOKIE_KEYS=None,
+                       ENCRYPTED_COOKIE_KEY=Fernet.generate_key())
+    def test_fall_back_to_old_key_setting(self):
         plaintext_bytes = 'adsfasdfw34wras'
         encrypted = self.pkl.dumps(plaintext_bytes)
-        self.pkl.dumps('asdf')
         decrypted = self.pkl.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
+
+    @override_settings(ENCRYPTED_COOKIE_KEYS=['nope'])
+    def test_incorrect_key_value(self):
+        with self.assertRaises(ValueError):
+            self.pkl.dumps('summat')
 
     @override_settings(COMPRESS_ENCRYPTED_COOKIE=True)
     def test_compressed_encrypt_decrypt(self):
@@ -59,15 +77,13 @@ class EncryptionTests(TestCase):
         self.assertEqual(plaintext_bytes, decrypted)
 
 
-class SessionStoreTests(TestCase):
+@override_settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key()])
+class SessionStoreTests(Base):
 
     def setUp(self):
         req = RequestFactory().get('/')
         req.META['REMOTE_ADDR'] = '10.0.0.1'
-        if get_paranoid:
-            self.sess = SessionStore(request_meta=req.META.copy())
-        else:
-            self.sess = SessionStore()
+        self.sess = SessionStore()
 
     def test_save_load(self):
         self.sess['secret'] = 'laser beams'
@@ -76,13 +92,27 @@ class SessionStoreTests(TestCase):
         self.assertEqual(stor['secret'], 'laser beams')
 
     def test_wrong_key(self):
-        with self.settings(ENCRYPTED_COOKIE_KEY='the first key'):
+        with self.settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key()]):
             self.sess['secret'] = 'laser beams'
             self.sess.save()
-        with self.settings(ENCRYPTED_COOKIE_KEY='the second key'):
+        with self.settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key()]):
             stor = self.sess.load()
-        # The DecryptionError is ignored and the session is reset.
+
+        # The decryption error is ignored and the session is reset.
         self.assertEqual(dict(stor.items()), {})
+
+    def test_key_rotation(self):
+        key1 = Fernet.generate_key()
+
+        with self.settings(ENCRYPTED_COOKIE_KEYS=[key1]):
+            self.sess['secret'] = 'laser beams'
+            self.sess.save()
+        # Decrypt a value using an old key:
+        with self.settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key(),
+                                                  key1]):
+            stor = self.sess.load()
+
+        self.assertEqual(dict(stor.items()), {'secret': 'laser beams'})
 
     @mock.patch('encrypted_cookies.signing.loads')
     def test_bad_signature(self, loader):
@@ -116,17 +146,17 @@ class SessionStoreTests(TestCase):
         assert pickler.dumps.called
         assert pickler.loads.called
 
-    @skipUnless(get_paranoid, 'django_paranoia not installed')
-    def test_cache_key(self):
-        ck = self.sess.cache_key
-        assert ck.startswith('django_paranoid'), (
-            'Unexpected cache key: %s' % ck)
 
-    @skipUnless(get_paranoid, 'django_paranoia not installed')
-    def test_paranoia_catches_tampering(self):
-        req = RequestFactory().get('/')
-        req.META['REMOTE_ADDR'] = '192.168.1.1'  # alter this value.
-        with mock.patch('django_paranoia.sessions.warning.send') as warn:
-            self.sess.save()
-            self.sess.check_request_data(request=req)
-        assert warn.called
+class TestKeygen(TestCase):
+
+    def test_generate_key(self):
+        stdout = cStringIO.StringIO()
+        try:
+            keygen.main(stdout=stdout, argv=[])
+        except SystemExit, exc:
+            self.assertEqual(exc.code, 0)
+
+        key = stdout.getvalue()
+        f = Fernet(key)
+        # Make sure this doesn't raise an error about a bad key.
+        f.decrypt(f.encrypt('whatever'))

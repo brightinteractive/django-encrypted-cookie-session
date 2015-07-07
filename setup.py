@@ -16,9 +16,13 @@ author_email = 'francis@bright-interactive.co.uk'
 license = 'BSD'
 install_requires = [
     'Django>=1.4',
-    'M2Crypto>=0.21.1',
-    'm2secret>=0.1.1',
+    'cryptography>=0.9.2',
 ]
+entry_points = {
+    'console_scripts': [
+        'encrypted-cookies-keygen=encrypted_cookies.keygen:main',
+    ],
+}
 
 
 def get_version(package):
@@ -73,5 +77,6 @@ setup(
     author_email=author_email,
     packages=get_packages(package),
     package_data=get_package_data(package),
-    install_requires=install_requires
+    install_requires=install_requires,
+    entry_points=entry_points,
 )

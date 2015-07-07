@@ -8,8 +8,6 @@ from django.core.exceptions import ImproperlyConfigured
 
 from  cryptography import fernet
 
-log = logging.getLogger(__name__)
-
 
 def encrypt(plaintext_bytes):
     """
@@ -29,13 +27,6 @@ def decrypt(encrypted_bytes):
 
 def configure_fernet():
     keys = list(getattr(settings, 'ENCRYPTED_COOKIE_KEYS', None) or [])
-    if not len(keys):
-        old_key = getattr(settings, 'ENCRYPTED_COOKIE_KEY', None)
-        if old_key:
-            log.warning('ENCRYPTED_COOKIE_KEY setting is deprecated. '
-                        'Use ENCRYPTED_COOKIE_KEYS=[...]')
-            keys.append(old_key)
-
     if not len(keys):
         raise ImproperlyConfigured(
             'The ENCRYPTED_COOKIE_KEYS settings cannot be empty.')

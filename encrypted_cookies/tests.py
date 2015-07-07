@@ -34,7 +34,7 @@ class EncryptionTests(Base):
     def setUp(self):
         self.pkl = EncryptingPickleSerializer()
 
-    @override_settings(ENCRYPTED_COOKIE_KEYS=None, ENCRYPTED_COOKIE_KEY='')
+    @override_settings(ENCRYPTED_COOKIE_KEYS=None)
     def test_empty_key_not_allowed(self):
         with self.assertRaises(ImproperlyConfigured):
             self.pkl.dumps('summat')
@@ -43,14 +43,6 @@ class EncryptionTests(Base):
         plaintext_bytes = 'adsfasdfw34wras'
         encrypted = self.pkl.dumps(plaintext_bytes)
         self.assertNotEqual(plaintext_bytes, encrypted)
-        decrypted = self.pkl.loads(encrypted)
-        self.assertEqual(plaintext_bytes, decrypted)
-
-    @override_settings(ENCRYPTED_COOKIE_KEYS=None,
-                       ENCRYPTED_COOKIE_KEY=Fernet.generate_key())
-    def test_fall_back_to_old_key_setting(self):
-        plaintext_bytes = 'adsfasdfw34wras'
-        encrypted = self.pkl.dumps(plaintext_bytes)
         decrypted = self.pkl.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 

@@ -166,12 +166,12 @@ Changelog
 * Dropped support for [M2Crypto](https://pypi.python.org/pypi/M2Crypto)
   in favor of [cryptography](https://cryptography.io/en/latest/) for
   better platform support.
+* **BREAKING CHANGE**: Old values from the `ENCRYPTED_COOKIE_KEY` setting
+  no longer work because key formatting changed. You must generate a new
+  key with the provided command and define it in the list setting like
+  `ENCRYPTED_COOKIE_KEYS = [...]`.
 * **BREAKING CHANGE**: The Django `SECRET_KEY` setting can no longer be
   used as a fallback. Define `ENCRYPTED_COOKIE_KEYS = [...]` instead.
-* **DEPRECATED**: The Django `ENCRYPTED_COOKIE_KEY` setting is deprecated.
-  Use `ENCRYPTED_COOKIE_KEYS = [...]` instead.
-* You cannot reuse your old `ENCRYPTED_COOKIE_KEY` value because the key
-  format has changed. You must generate a new key using the provided command.
 * Removed support for
   [django-paranoia](https://django-paranoia.readthedocs.org/en/latest/)
   because its core features are included with Django now.

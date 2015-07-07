@@ -69,7 +69,6 @@ class EncryptionTests(Base):
         self.assertEqual(plaintext_bytes, decrypted)
 
 
-@override_settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key()])
 class SessionStoreTests(Base):
 
     def setUp(self):

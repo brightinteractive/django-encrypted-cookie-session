@@ -119,6 +119,28 @@ you can open a Python shell on the server and decrypt a cookie like this:
 
     signing.loads("<cookie_value>", salt='encrypted_cookies', serializer=EncryptingPickleSerializer)
 
+Writing Django Tests
+====================
+
+When writing [Django tests](https://docs.djangoproject.com/en/dev/topics/testing/)
+for an application that uses encrypted cookie sessions
+there are a few things to consider. If your view sets a session variable
+and you want to check that value later in an assertion then it's no problem,
+you can just access `self.client.session['the-thing']` as you'd expect.
+However, if you need to set up a session *before* running view code
+then you need to think like a cookie. Here's a way to prepare session
+data for a view (tested in Django 1.8):
+
+    # Imagine that this is inside a subclass of django.test.TestCase
+    session = self.client.session  # activate Django's weird getter
+    session['user_id'] = '<logged-in-user-id>'
+    session.save()
+    # Next, you'll need to load the encrypted session into a
+    # request cookie so that the view will parse it.
+    # The `session_key` is actually the session contents.
+    self.client.cookies[settings.SESSION_COOKIE_NAME] = session.session_key
+    # Now when you run your view code it will see the session data:
+    self.client.get('/some-login-protected-url')
 
 Publishing releases to PyPI
 ===========================

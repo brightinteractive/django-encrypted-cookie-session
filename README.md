@@ -1,5 +1,4 @@
-Django Encrypted Session Cookie
-===============================
+# Django Encrypted Session Cookie
 
 Out of the box Django lets you run sessions with
 [signed cookies](https://docs.djangoproject.com/en/dev/topics/http/sessions/#using-cookie-based-sessions).
@@ -13,24 +12,52 @@ handing to the client.
 
 **Author:** Francis Devereux, [Bright Interactive][1].
 
-Adding it to your Django Project
-================================
+# Adding it to your Django Project
 
-Here are some installation commands you can follow using the
-[pip](http://www.pip-installer.org/) installer.
 You'll need
 [Django](https://djangoproject.com/) 1.4.x or greater (tested through 1.8)
-and [cryptography](https://cryptography.io/en/latest/)
-which are both automatically installed for you.
-Python 2.6 or higher is supported but Python 3 is untested.
+and
+Python 2.6 or higher. Python 3 is currently untested.
+You'll also need to install a backend for the actual cryptographic operations.
+See the section on backends for their respective installation instructions.
 
-Install the module and its dependencies with pip:
+Install the module and its dependencies with [pip](http://www.pip-installer.org/):
 
     pip install django-encrypted-cookie-session
 
 Activate the session engine by putting this in your Django settings:
 
     SESSION_ENGINE = 'encrypted_cookies'
+
+See the instructions on your chosen backend for how to configure
+your `ENCRYPTED_COOKIE_KEYS` setting.
+
+Beware! If you don't use an HTTPS URL for local development
+(you probably don't) then you may need to set this:
+
+    SESSION_COOKIE_SECURE = False
+
+Without it you might see a KeyError for session data because it
+won't be saving properly. Obviously, in production where you use
+an HTTPS URL you should make sure cookies are always secure.
+
+# Crypto Backends
+
+The following are the available backends you can use for
+cryptographic operations. You need to install at least one.
+
+## Cryptography
+
+### Installation and configuration
+
+The [cryptography](https://cryptography.io/en/latest/) backend
+is the default. Install it with pip like this:
+
+    pip install 'cryptography>=0.7'
+
+You can explicitly activate it with this setting:
+
+    ENCRYPTED_COOKIE_BACKEND = 'cryptography'
 
 When you install `django-encrypted-cookie-session` you also get
 the `encrypted-cookies-keygen` command. Run this to generate a key
@@ -43,17 +70,7 @@ Add it to your Django settings:
 
     ENCRYPTED_COOKIE_KEYS = ['VDIXZGQS3fiJwG93Ha2jYZGZkxcqGDY3m-nZI3fha48=']
 
-Beware! If you don't use an HTTPS URL for local development
-(you probably don't) then you may need to set this:
-
-    SESSION_COOKIE_SECURE = False
-
-Without it you might see a KeyError for session data because it
-won't be saving properly. Obviously, in production where you use
-an HTTPS URL you should make sure cookies are always secure.
-
-Key Rotation
-============
+### Key Rotation
 
 For added protection, you can rotate your encryption keys whenever
 you like. When you add a new key, you may wish to include the old
@@ -73,8 +90,39 @@ Any time a user makes a request to a Django view that alters the session,
 the cookie will be re-encrypted in the response.
 Thus, you can safely remove old keys soon after you deploy a new key.
 
-Cookie Size
-===========
+## M2Crypto
+
+### Installation and Configuration
+
+[M2Crypto](https://github.com/martinpaljak/M2Crypto/)
+requires [swig](http://www.swig.org/)
+so first you need to install that with your
+package manager. On Mac OS X with [homebrew](http://brew.sh/) you can do:
+
+    brew install swig
+
+At the time of this writing, there is an
+[open bug](https://github.com/martinpaljak/M2Crypto/issues/60)
+which may require you to downgrade swig or downgrade M2Crypto.
+Version 0.22.1 of M2Crypto is known to work.
+Say a prayer and try to install it:
+
+    pip install 'M2Crypto>=0.22.1'
+
+Activate the backend with this setting:
+
+    ENCRYPTED_COOKIE_BACKEND = 'M2Crypto'
+
+Think of a long secret (preferably longer than 32 bytes)
+and add it to your Django settings:
+
+    ENCRYPTED_COOKIE_KEYS = ['some really long secret']
+
+### Key Rotation
+
+Key rotation is not currently supported in the M2Crypto backend.
+
+# Cookie Size
 
 Most browsers limit cookie size to 4092 bytes (name + value).
 Most servers also have a limit to the request/response header size
@@ -97,8 +145,7 @@ size may also affect network performance. For best results, limit the amount of
 data you store in the session. If you turn on logging, you'll see the byte size
 of each session cookie.
 
-Logging
-=======
+# Logging
 
 This module outputs some logging in the `encrypted_cookies` channel.
 Here is a settings example for enabling logging in Django:
@@ -112,8 +159,7 @@ Here is a settings example for enabling logging in Django:
         }
     }
 
-Debugging
-=========
+# Debugging
 
 If you need to debug an issue with sessions on a live system,
 you can open a Python shell on the server and decrypt a cookie like this:
@@ -124,8 +170,7 @@ you can open a Python shell on the server and decrypt a cookie like this:
     signing.loads("<cookie_value>", salt='encrypted_cookies', serializer=EncryptingPickleSerializer)
 
 
-Publishing releases to PyPI
-===========================
+# Publishing releases to PyPI
 
 To publish a new version of django-validate-on-save to PyPI, set the
 `__version__` string in `encrypted_cookies/__init__.py`, then run:
@@ -139,8 +184,7 @@ To publish a new version of django-validate-on-save to PyPI, set the
     git push --tags
 
 
-Running the tests
-=================
+# Running the tests
 
 To run the tests against multiple environments, install
 [tox](http://tox.readthedocs.org/) using
@@ -157,40 +201,40 @@ To debug something weird, run it directly from the virtualenv like:
 
     .tox/py27-django18/bin/python manage.py test
 
-Changelog
-=========
+If you are having trouble with the cryptography module, see the
+[installation docs](https://cryptography.io/en/latest/installation/) for tips.
+You may need to specify your openssl path.
 
-3.0.0
------
+# Changelog
 
-* Dropped support for [M2Crypto](https://pypi.python.org/pypi/M2Crypto)
-  in favor of [cryptography](https://cryptography.io/en/latest/) for
-  better platform support.
-* **BREAKING CHANGE**: Old values from the `ENCRYPTED_COOKIE_KEY` setting
-  no longer work because key formatting changed. You must generate a new
-  key with the provided command and define it in the list setting like
-  `ENCRYPTED_COOKIE_KEYS = [...]`.
-* **BREAKING CHANGE**: The Django `SECRET_KEY` setting can no longer be
-  used as a fallback. Define `ENCRYPTED_COOKIE_KEYS = [...]` instead.
-* Removed support for
+## 3.0.0
+
+* Added configurable backends.
+* Added support for [cryptography](https://cryptography.io/en/latest/).
+* **BREAKING CHANGE**: `cryptography` is the default backend so if you
+  want your old configuration to "just work" you need to set
+  `ENCRYPTED_COOKIE_BACKEND = 'M2Crypto'`.
+* **BREAKING CHANGE**: Removed support for
   [django-paranoia](https://django-paranoia.readthedocs.org/en/latest/)
   because its core features are included with Django now.
+* **DEPRECATED**: to prepare for key rotation, the `ENCRYPTED_COOKIE_KEY`
+  setting is deprecated in favor or `ENCRYPTED_COOKIE_KEYS = [...]`.
+* **DEPRECATED**: falling back to the Django `SECRET_KEY` setting is
+  deprecated. Define `ENCRYPTED_COOKIE_KEYS = [...]` instead.
+* Updated tests to cover Django through version 1.8.
 
-2.0.0
------
+## 2.0.0
 
 * Drop support for pycrypto to fix
   https://github.com/brightinteractive/django-encrypted-cookie-session/issues/11
   and
   https://github.com/brightinteractive/django-encrypted-cookie-session/issues/12
 
-1.1.1
------
+## 1.1.1
 
 * Fix ImportError with Django 1.5.3+
 
-1.1.0
------
+## 1.1.0
 
 * Added optional `ENCRYPTED_COOKIE_KEY` in addition to `SECRET_KEY` to encourage
   care and isolation of the key. You do not need to add `ENCRYPTED_COOKIE_KEY` to
@@ -201,13 +245,11 @@ Changelog
 * Added more test coverage
 * Compress cookie value before encrypting
 
-1.0.0
------
+## 1.0.0
 
 * Initial release
 
-License
-=======
+# License
 
 Copyright (c) Bright Interactive Limited.
 Started with django-reusable-app Copyright (c) DabApps.

@@ -18,6 +18,8 @@ try:
 except ImportError:
     import pickle
 
+from cryptography.fernet import InvalidToken
+
 from encrypted_cookies import crypto
 
 __version__ = '3.0.0'
@@ -65,7 +67,7 @@ class SessionStore(django.contrib.sessions.backends.signed_cookies.SessionStore)
                 max_age=settings.SESSION_COOKIE_AGE,
                 salt='encrypted_cookies')
         except (signing.BadSignature, pickle.UnpicklingError,
-                crypto.DecryptionError, ValueError), exc:
+                InvalidToken, ValueError), exc:
             log.debug('recreating session because of exception: %s: %s'
                       % (exc.__class__.__name__, exc))
             self.create()

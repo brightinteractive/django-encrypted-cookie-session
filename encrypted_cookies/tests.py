@@ -18,7 +18,6 @@ from cryptography.fernet import Fernet
 import mock
 
 from encrypted_cookies import (
-    crypto,
     keygen,
     EncryptingPickleSerializer,
     SessionStore,
@@ -30,10 +29,15 @@ class Base(TestCase):
     pass
 
 
-class CookieEncryptionTests(Base):
+class EncryptionTests(Base):
 
     def setUp(self):
         self.pkl = EncryptingPickleSerializer()
+
+    @override_settings(ENCRYPTED_COOKIE_KEYS=None)
+    def test_empty_key_not_allowed(self):
+        with self.assertRaises(ImproperlyConfigured):
+            self.pkl.dumps('summat')
 
     def test_encrypt_decrypt(self):
         plaintext_bytes = 'adsfasdfw34wras'
@@ -42,14 +46,10 @@ class CookieEncryptionTests(Base):
         decrypted = self.pkl.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 
-    def test_default_backend(self):
-        backend = crypto.get_backend()
-        self.assertEqual(backend.module_name, 'cryptography')
-
-    @override_settings(ENCRYPTED_COOKIE_BACKEND='nopenotreally')
-    def test_unknown_backend(self):
-        with self.assertRaises(ImproperlyConfigured):
-            crypto.get_backend()
+    @override_settings(ENCRYPTED_COOKIE_KEYS=['nope'])
+    def test_incorrect_key_value(self):
+        with self.assertRaises(ValueError):
+            self.pkl.dumps('summat')
 
     @override_settings(COMPRESS_ENCRYPTED_COOKIE=True)
     def test_compressed_encrypt_decrypt(self):
@@ -82,7 +82,7 @@ class SessionStoreTests(Base):
         stor = self.sess.load()
         self.assertEqual(stor['secret'], 'laser beams')
 
-    def test_wrong_key_resets_session(self):
+    def test_wrong_key(self):
         with self.settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key()]):
             self.sess['secret'] = 'laser beams'
             self.sess.save()
@@ -91,6 +91,19 @@ class SessionStoreTests(Base):
 
         # The decryption error is ignored and the session is reset.
         self.assertEqual(dict(stor.items()), {})
+
+    def test_key_rotation(self):
+        key1 = Fernet.generate_key()
+
+        with self.settings(ENCRYPTED_COOKIE_KEYS=[key1]):
+            self.sess['secret'] = 'laser beams'
+            self.sess.save()
+        # Decrypt a value using an old key:
+        with self.settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key(),
+                                                  key1]):
+            stor = self.sess.load()
+
+        self.assertEqual(dict(stor.items()), {'secret': 'laser beams'})
 
     @mock.patch('encrypted_cookies.signing.loads')
     def test_bad_signature(self, loader):
@@ -138,97 +151,3 @@ class TestKeygen(TestCase):
         f = Fernet(key)
         # Make sure this doesn't raise an error about a bad key.
         f.decrypt(f.encrypt('whatever'))
-
-
-class BackendTests(Base):
-
-    def setUp(self):
-        self.backend = crypto.get_backend()
-
-
-@override_settings(ENCRYPTED_COOKIE_BACKEND='cryptography')
-class CryptographyTests(BackendTests):
-
-    def test_lookup(self):
-        self.assertEqual(self.backend.module_name, 'cryptography')
-
-    @override_settings(ENCRYPTED_COOKIE_KEYS=None)
-    def test_empty_key_not_allowed(self):
-        with self.assertRaises(ImproperlyConfigured):
-            crypto.get_backend().encrypt('summat')
-
-    def test_encrypt_decrypt(self):
-        message = 'the house key is under the mat'
-        with self.settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key()]):
-            token = self.backend.encrypt(message)
-        self.assertEqual(self.backend.decrypt(token), message)
-
-    @override_settings(ENCRYPTED_COOKIE_KEYS=['nope'])
-    def test_incorrect_key_value(self):
-        with self.assertRaises(ValueError):
-            crypto.get_backend().encrypt('summat')
-
-    @override_settings(ENCRYPTED_COOKIE_KEYS=None,
-                       ENCRYPTED_COOKIE_KEY='some old key')
-    def test_cannot_fall_back_to_old_setting(self):
-        with self.assertRaises(ImproperlyConfigured):
-            crypto.get_backend()
-
-    def test_key_rotation(self):
-        message = 'watch out for feral cats'
-        key1 = Fernet.generate_key()
-
-        with self.settings(ENCRYPTED_COOKIE_KEYS=[key1]):
-            token = crypto.get_backend().encrypt(message)
-
-        # Decrypt a value using an old key:
-        with self.settings(ENCRYPTED_COOKIE_KEYS=[Fernet.generate_key(),
-                                                  key1]):
-            value = crypto.get_backend().decrypt(token)
-
-        self.assertEqual(value, message)
-
-
-@override_settings(ENCRYPTED_COOKIE_BACKEND='M2Crypto',
-                   ENCRYPTED_COOKIE_KEYS=['some long string'])
-class M2CryptoTests(BackendTests):
-
-    def test_lookup(self):
-        self.assertEqual(self.backend.module_name, 'M2Crypto')
-
-    def test_fall_back_to_old_key_setting(self):
-        with self.settings(ENCRYPTED_COOKIE_KEYS=None,
-                           ENCRYPTED_COOKIE_KEY='this is an old key'):
-            backend = crypto.get_backend()
-        backend.decrypt(backend.encrypt('some message'))
-
-    def test_fall_back_to_django_secret_key(self):
-        with self.settings(ENCRYPTED_COOKIE_KEYS=None,
-                           ENCRYPTED_COOKIE_KEY=None,
-                           SECRET_KEY='this is django secret'):
-            backend = crypto.get_backend()
-        backend.decrypt(backend.encrypt('some message'))
-
-    @override_settings(ENCRYPTED_COOKIE_KEYS=None,
-                       ENCRYPTED_COOKIE_KEY=None,
-                       SECRET_KEY='')
-    def test_empty_key_not_allowed(self):
-        with self.assertRaises(ImproperlyConfigured):
-            crypto.get_backend().encrypt('summat')
-
-    @override_settings(ENCRYPTED_COOKIE_KEYS=['key1', 'key2'])
-    def test_key_rotation_not_supported(self):
-        with self.assertRaises(NotImplementedError):
-            crypto.get_backend().encrypt('summat')
-
-    def test_encrypt_decrypt(self):
-        message = 'the house key is under the mat'
-        token = self.backend.encrypt(message)
-        self.assertEqual(self.backend.decrypt(token), message)
-
-    def test_reraise_decryption_errors(self):
-        with self.settings(ENCRYPTED_COOKIE_KEYS=['first key']):
-            token = crypto.get_backend().encrypt('message')
-        with self.assertRaises(crypto.DecryptionError):
-            with self.settings(ENCRYPTED_COOKIE_KEYS=['second key']):
-                crypto.get_backend().decrypt(token)

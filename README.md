@@ -28,6 +28,10 @@ Install the module and its dependencies with pip:
 
     pip install django-encrypted-cookie-session
 
+If you have any trouble with the cryptography module, read through
+their [installation docs](https://cryptography.io/en/latest/installation/)
+for tips.
+
 Activate the session engine by putting this in your Django settings:
 
     SESSION_ENGINE = 'encrypted_cookies'

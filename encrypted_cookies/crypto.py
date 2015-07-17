@@ -11,7 +11,7 @@ from  cryptography import fernet
 
 def encrypt(plaintext_bytes):
     """
-    Returns an ecnrypted version of plaintext_bytes.
+    Returns an encrypted version of plaintext_bytes.
 
     The encrypted value is a URL-encoded base 64 value.
     """

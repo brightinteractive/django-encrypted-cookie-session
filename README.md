@@ -175,6 +175,13 @@ need 2.6 as well to run all environments. Run the tests like this:
 
     tox
 
+If you are running on OS X and have OpenSSL installed in MacPorts then you
+may need to run tox with the environment variables suggested by
+https://cryptography.io/en/latest/installation/#using-your-own-openssl-on-os-x
+like this:
+
+    env ARCHFLAGS="-arch x86_64" LDFLAGS="-L/opt/local/lib" CFLAGS="-I/opt/local/include" tox
+
 To run the tests against a single environment:
 
     tox -e py27-django18

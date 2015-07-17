@@ -19,46 +19,33 @@ Adding it to your Django Project
 Here are some installation commands you can follow using the
 [pip](http://www.pip-installer.org/) installer.
 You'll need
-[Django](https://djangoproject.com/) 1.4.x or Django 1.5.x
-which is automatically installed for you.
+[Django](https://djangoproject.com/) 1.4.x or greater (tested through 1.8)
+and [cryptography](https://cryptography.io/en/latest/)
+which are both automatically installed for you.
+Python 2.6 or higher is supported but Python 3 is untested.
 
-You can optionally install [django-paranoia][2] which will be
-integrated into the session engine. Add it like this:
-
-    pip install 'django-paranoia>=0.1.8.6'
-
-django-encrypted-cookie-session uses M2Crypto, which requires SWIG to build,
-so install SWIG before attempting to install django-encrypted-cookie-session:
-
-    # OS X with MacPorts:
-    sudo port install swig-python
-    # Debian:
-    sudo apt-get install swig
-
-then install the main package:
+Install the module and its dependencies with pip:
 
     pip install django-encrypted-cookie-session
+
+If you have any trouble with the cryptography module, read through
+their [installation docs](https://cryptography.io/en/latest/installation/)
+for tips.
 
 Activate the session engine by putting this in your Django settings:
 
     SESSION_ENGINE = 'encrypted_cookies'
 
-Add a strong random key to use for encryption. Make sure it is at least 32
-characters long and instead of banging on your keyboard take care to make sure
-it is really random. You should change this key periodically.
+When you install `django-encrypted-cookie-session` you also get
+the `encrypted-cookies-keygen` command. Run this to generate a key
+to encrypt your cookies with:
 
-    ENCRYPTED_COOKIE_KEY = 'really-long-random-string'
+    $ encrypted-cookies-keygen
+    VDIXZGQS3fiJwG93Ha2jYZGZkxcqGDY3m-nZI3fha48=
 
-If you don't declare this setting the package will use `SECRET_KEY` so just
-double check that you have a long random string in there.
+Add it to your Django settings:
 
-If you installed [django-paranoia][2], ensure its middleware is in settings.
-See the [django-paranoia][2] docs for more info.
-
-    MIDDLEWARE_CLASSES = (
-        ...
-        'django_paranoia.middleware.Middleware',
-    )
+    ENCRYPTED_COOKIE_KEYS = ['VDIXZGQS3fiJwG93Ha2jYZGZkxcqGDY3m-nZI3fha48=']
 
 Beware! If you don't use an HTTPS URL for local development
 (you probably don't) then you may need to set this:
@@ -68,6 +55,27 @@ Beware! If you don't use an HTTPS URL for local development
 Without it you might see a KeyError for session data because it
 won't be saving properly. Obviously, in production where you use
 an HTTPS URL you should make sure cookies are always secure.
+
+Key Rotation
+============
+
+For added protection, you can rotate your encryption keys whenever
+you like. When you add a new key, you may wish to include the old
+key temporarily so that any sessions active during your deployment
+will not be reset.
+
+Add the *new* key first in the list like this:
+
+    ENCRYPTED_COOKIE_KEYS = [
+        # New key:
+        '9evXbsR_1yZA5EW_blSI4O69MjGKwOu1-UwLK_PWyKw=',
+        # Old key:
+        'VDIXZGQS3fiJwG93Ha2jYZGZkxcqGDY3m-nZI3fha48=',
+    ]
+
+Any time a user makes a request to a Django view that alters the session,
+the cookie will be re-encrypted in the response.
+Thus, you can safely remove old keys soon after you deploy a new key.
 
 Cookie Size
 ===========
@@ -169,14 +177,30 @@ need 2.6 as well to run all environments. Run the tests like this:
 
 To run the tests against a single environment:
 
-    tox -e py27-django15-m2c
+    tox -e py27-django18
 
 To debug something weird, run it directly from the virtualenv like:
 
-    .tox/py27-django15/bin/python manage.py test
+    .tox/py27-django18/bin/python manage.py test
 
 Changelog
 =========
+
+3.0.0
+-----
+
+* Dropped support for [M2Crypto](https://pypi.python.org/pypi/M2Crypto)
+  in favor of [cryptography](https://cryptography.io/en/latest/) for
+  better platform support.
+* **BREAKING CHANGE**: Old values from the `ENCRYPTED_COOKIE_KEY` setting
+  no longer work because key formatting changed. You must generate a new
+  key with the provided command and define it in the list setting like
+  `ENCRYPTED_COOKIE_KEYS = [...]`.
+* **BREAKING CHANGE**: The Django `SECRET_KEY` setting can no longer be
+  used as a fallback. Define `ENCRYPTED_COOKIE_KEYS = [...]` instead.
+* Removed support for
+  [django-paranoia](https://django-paranoia.readthedocs.org/en/latest/)
+  because its core features are included with Django now.
 
 2.0.0
 -----
@@ -236,4 +260,3 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 [1]: http://www.bright-interactive.com/
-[2]: https://pypi.python.org/pypi/django-paranoia

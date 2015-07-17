@@ -1,28 +1,34 @@
 # -*- coding: utf-8 -*-
 # (c) 2013 Bright Interactive Limited. All rights reserved.
 # http://www.bright-interactive.com | info@bright-interactive.com
+import logging
+
 from django.conf import settings
-from m2secret import Secret
+from django.core.exceptions import ImproperlyConfigured
 
-
-def encrypted_cookie_key():
-    key = getattr(settings, 'ENCRYPTED_COOKIE_KEY', None)
-    if not key:
-        key = settings.SECRET_KEY
-    return key
+from  cryptography import fernet
 
 
 def encrypt(plaintext_bytes):
-    key = encrypted_cookie_key()
-    if not key:
-        raise ValueError('The ENCRYPTED_COOKIE_KEY and SECRET_KEY settings must not both be empty.')
+    """
+    Returns an ecnrypted version of plaintext_bytes.
 
-    secret = Secret()
-    secret.encrypt(plaintext_bytes, key)
-    return secret.serialize()
+    The encrypted value is a URL-encoded base 64 value.
+    """
+    return configure_fernet().encrypt(plaintext_bytes)
 
 
 def decrypt(encrypted_bytes):
-    secret = Secret()
-    secret.deserialize(encrypted_bytes)
-    return secret.decrypt(encrypted_cookie_key())
+    """
+    Returns a decrypted version of encrypted_bytes.
+    """
+    return configure_fernet().decrypt(encrypted_bytes)
+
+
+def configure_fernet():
+    keys = list(getattr(settings, 'ENCRYPTED_COOKIE_KEYS', None) or [])
+    if not len(keys):
+        raise ImproperlyConfigured(
+            'The ENCRYPTED_COOKIE_KEYS settings cannot be empty.')
+
+    return fernet.MultiFernet([fernet.Fernet(k) for k in keys])

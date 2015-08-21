@@ -153,7 +153,7 @@ data for a view (tested in Django 1.8):
 Publishing releases to PyPI
 ===========================
 
-To publish a new version of django-validate-on-save to PyPI, set the
+To publish a new version of django-encrypted-cookie-session to PyPI, set the
 `__version__` string in `encrypted_cookies/__init__.py`, then run:
 
     # Run the tests against multiple environments

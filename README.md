@@ -184,11 +184,11 @@ like this:
 
 To run the tests against a single environment:
 
-    tox -e py27-django18
+    tox -e py27-django1.8
 
 To debug something weird, run it directly from the virtualenv like:
 
-    .tox/py27-django18/bin/python manage.py test
+    .tox/py27-django1.8/bin/python manage.py test
 
 Changelog
 =========

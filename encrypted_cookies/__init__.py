@@ -22,7 +22,7 @@ from cryptography.fernet import InvalidToken
 
 from encrypted_cookies import crypto
 
-__version__ = '3.0.0'
+__version__ = '3.0.1'
 log = logging.getLogger(__name__)
 
 
@@ -84,5 +84,14 @@ class SessionStore(django.contrib.sessions.backends.signed_cookies.SessionStore)
         data = signing.dumps(session_cache, compress=True,
             salt='encrypted_cookies',
             serializer=EncryptingPickleSerializer)
-        log.info('encrypted session cookie is %s bytes' % len(data))
+
+        cookie_size = len(data)
+        log.debug('encrypted session cookie is %s bytes' % cookie_size)
+        if cookie_size > 4093:
+            # This will most definitely result in lost sessions.
+            # http://browsercookielimits.squawky.net/
+            log.error(
+                'encrypted session cookie is too large for most browsers; '
+                'size: %s' % cookie_size)
+
         return data

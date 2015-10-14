@@ -80,7 +80,8 @@ Thus, you can safely remove old keys soon after you deploy a new key.
 Cookie Size
 ===========
 
-Most browsers limit cookie size to 4092 bytes (name + value).
+Most browsers [limit cookie size](http://browsercookielimits.squawky.net/)
+to 4093 bytes (name + value).
 Most servers also have a limit to the request/response header size
 they can process.
 It's pretty easy to hit these limits since an encrypted cookie takes all
@@ -98,8 +99,12 @@ like this:
 
 Also note that the cookie value will be sent to your server on every request so
 size may also affect network performance. For best results, limit the amount of
-data you store in the session. If you turn on logging, you'll see the byte size
-of each session cookie.
+data you store in the session.
+
+If you turn on logging, you'll see the byte size of each session cookie.
+The library will log an error if your cookie size exceeds the known maximum
+size. If you see this in your logs it most certainly means user sessions are
+getting lost!
 
 Logging
 =======
@@ -192,6 +197,11 @@ To debug something weird, run it directly from the virtualenv like:
 
 Changelog
 =========
+
+3.0.1
+-----
+
+* Logs an error if your cookie size exceeds the known maximum size.
 
 3.0.0
 -----

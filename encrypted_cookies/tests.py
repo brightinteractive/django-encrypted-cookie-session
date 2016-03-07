@@ -144,7 +144,7 @@ class TestKeygen(TestCase):
         stdout = cStringIO.StringIO()
         try:
             keygen.main(stdout=stdout, argv=[])
-        except SystemExit, exc:
+        except SystemExit as exc:
             self.assertEqual(exc.code, 0)
 
         key = stdout.getvalue()

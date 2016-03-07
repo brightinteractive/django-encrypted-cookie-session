@@ -6,7 +6,7 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-from  cryptography import fernet
+from cryptography import fernet
 
 
 def encrypt(plaintext_bytes):

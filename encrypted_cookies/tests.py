@@ -50,7 +50,7 @@ class EncryptionTests(Base):
     def test_encrypt_decrypt(self):
         plaintext_bytes = 'adsfasdfw34wras'
         encrypted = self.pkl.dumps(plaintext_bytes)
-        self.assertNotEqual(plaintext_bytes, encrypted)
+        self.assertNotEqual(plaintext_bytes, encrypted.decode('ascii'))
         decrypted = self.pkl.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 
@@ -63,7 +63,7 @@ class EncryptionTests(Base):
     def test_compressed_encrypt_decrypt(self):
         plaintext_bytes = 'adsfasdfw34wras'
         encrypted = self.pkl.dumps(plaintext_bytes)
-        self.assertNotEqual(plaintext_bytes, encrypted)
+        self.assertNotEqual(plaintext_bytes, encrypted.decode('ascii'))
         decrypted = self.pkl.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 
@@ -135,7 +135,7 @@ class SessionStoreTests(Base):
     def test_use_encrypted_pickles(self, PicklerClass):
         pickler = mock.Mock()
         PicklerClass.return_value = pickler
-        pickler.dumps.return_value = '<data>'
+        pickler.dumps.return_value = b'<data>'
 
         self.sess.save()
         self.sess.load()
@@ -158,4 +158,4 @@ class TestKeygen(TestCase):
         key = stdout.getvalue()
         f = Fernet(key)
         # Make sure this doesn't raise an error about a bad key.
-        f.decrypt(f.encrypt('whatever'))
+        f.decrypt(f.encrypt(b'whatever'))

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) 2013 Bright Interactive Limited. All rights reserved.
 # http://www.bright-interactive.com | info@bright-interactive.com
-import cStringIO
 
 from django.core import signing
 from django.core.exceptions import ImproperlyConfigured
@@ -13,9 +12,18 @@ try:
 except ImportError:
     # For Django < 1.6:
     from django.utils.unittest.case import skipUnless
+try:
+    from django.utils.six.moves import cStringIO as StringIO
+except ImportError:
+    # For Django < 1.5:
+    from cStringIO import StringIO
 
 from cryptography.fernet import Fernet
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    # For Python < 3.3
+    import mock
 
 from encrypted_cookies import (
     keygen,
@@ -141,7 +149,7 @@ class SessionStoreTests(Base):
 class TestKeygen(TestCase):
 
     def test_generate_key(self):
-        stdout = cStringIO.StringIO()
+        stdout = StringIO()
         try:
             keygen.main(stdout=stdout, argv=[])
         except SystemExit as exc:

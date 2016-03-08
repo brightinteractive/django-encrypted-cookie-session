@@ -8,11 +8,6 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 try:
-    from django.test.utils import skipUnless
-except ImportError:
-    # For Django < 1.6:
-    from django.utils.unittest.case import skipUnless
-try:
     from django.utils.six.moves import cStringIO as StringIO
 except ImportError:
     # For Django < 1.5:

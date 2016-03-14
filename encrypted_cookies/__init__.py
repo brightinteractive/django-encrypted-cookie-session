@@ -22,7 +22,7 @@ from cryptography.fernet import InvalidToken
 
 from encrypted_cookies import crypto
 
-__version__ = '3.0.1'
+__version__ = '3.1.0'
 log = logging.getLogger(__name__)
 
 

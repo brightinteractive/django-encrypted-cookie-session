@@ -198,6 +198,11 @@ To debug something weird, run it directly from the virtualenv like:
 Changelog
 =========
 
+3.1.0
+-----
+
+* Add support / testing for Python 3 (3.3, 3.4, and 3.5) and Django 1.9.
+
 3.0.1
 -----
 

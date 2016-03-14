@@ -198,6 +198,11 @@ To debug something weird, run it directly from the virtualenv like:
 Changelog
 =========
 
+3.1.1
+-----
+
+* No code changes - re-release due to error during publish of 3.1.0 to PyPI.
+
 3.1.0
 -----
 

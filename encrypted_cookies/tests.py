@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) 2013 Bright Interactive Limited. All rights reserved.
 # http://www.bright-interactive.com | info@bright-interactive.com
-import cStringIO
 
 from django.core import signing
 from django.core.exceptions import ImproperlyConfigured
@@ -9,13 +8,17 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 try:
-    from django.test.utils import skipUnless
+    from django.utils.six.moves import cStringIO as StringIO
 except ImportError:
-    # For Django < 1.6:
-    from django.utils.unittest.case import skipUnless
+    # For Django < 1.5:
+    from cStringIO import StringIO
 
 from cryptography.fernet import Fernet
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    # For Python < 3.3
+    import mock
 
 from encrypted_cookies import (
     keygen,
@@ -42,7 +45,7 @@ class EncryptionTests(Base):
     def test_encrypt_decrypt(self):
         plaintext_bytes = 'adsfasdfw34wras'
         encrypted = self.pkl.dumps(plaintext_bytes)
-        self.assertNotEqual(plaintext_bytes, encrypted)
+        self.assertNotEqual(plaintext_bytes, encrypted.decode('ascii'))
         decrypted = self.pkl.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 
@@ -55,7 +58,7 @@ class EncryptionTests(Base):
     def test_compressed_encrypt_decrypt(self):
         plaintext_bytes = 'adsfasdfw34wras'
         encrypted = self.pkl.dumps(plaintext_bytes)
-        self.assertNotEqual(plaintext_bytes, encrypted)
+        self.assertNotEqual(plaintext_bytes, encrypted.decode('ascii'))
         decrypted = self.pkl.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 
@@ -127,7 +130,7 @@ class SessionStoreTests(Base):
     def test_use_encrypted_pickles(self, PicklerClass):
         pickler = mock.Mock()
         PicklerClass.return_value = pickler
-        pickler.dumps.return_value = '<data>'
+        pickler.dumps.return_value = b'<data>'
 
         self.sess.save()
         self.sess.load()
@@ -141,13 +144,13 @@ class SessionStoreTests(Base):
 class TestKeygen(TestCase):
 
     def test_generate_key(self):
-        stdout = cStringIO.StringIO()
+        stdout = StringIO()
         try:
             keygen.main(stdout=stdout, argv=[])
-        except SystemExit, exc:
+        except SystemExit as exc:
             self.assertEqual(exc.code, 0)
 
         key = stdout.getvalue()
         f = Fernet(key)
         # Make sure this doesn't raise an error about a bad key.
-        f.decrypt(f.encrypt('whatever'))
+        f.decrypt(f.encrypt(b'whatever'))

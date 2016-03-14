@@ -1,8 +1,5 @@
 sudo: false
 language: python
-python:
-    - "2.6"
-    - "2.7"
 python: 2.7
 env:
     - TOX_ENV=py26-django16
@@ -11,8 +8,21 @@ env:
     - TOX_ENV=py27-django16
     - TOX_ENV=py27-django17
     - TOX_ENV=py27-django18
+    - TOX_ENV=py27-django19
+    - TOX_ENV=py33-django16
+    - TOX_ENV=py33-django17
+    - TOX_ENV=py33-django18
+    - TOX_ENV=py34-django16
+    - TOX_ENV=py34-django17
+    - TOX_ENV=py34-django18
+    - TOX_ENV=py34-django19
 matrix:
     fast_finish: true
+    include:
+        - python: 3.5
+          env: TOX_ENV=py35-django18
+        - python: 3.5
+          env: TOX_ENV=py35-django19
 install:
     - pip install tox
 script:

@@ -22,7 +22,7 @@ from cryptography.fernet import InvalidToken
 
 from encrypted_cookies import crypto
 
-__version__ = '3.0.1'
+__version__ = '3.1.0'
 log = logging.getLogger(__name__)
 
 
@@ -43,7 +43,7 @@ class EncryptingPickleSerializer(PickleSerializer):
         if getattr(settings, 'COMPRESS_ENCRYPTED_COOKIE', False):
             try:
                 decrypted_data = zlib.decompress(decrypted_data)
-            except zlib.error, exc:
+            except zlib.error as exc:
                 # This probably means the server setting changed after a client
                 # received the cookie. It should be fixed on the next request.
                 log.warning('Could not decompress cookie value: %s: %s'
@@ -67,7 +67,7 @@ class SessionStore(django.contrib.sessions.backends.signed_cookies.SessionStore)
                 max_age=settings.SESSION_COOKIE_AGE,
                 salt='encrypted_cookies')
         except (signing.BadSignature, pickle.UnpicklingError,
-                InvalidToken, ValueError), exc:
+                InvalidToken, ValueError) as exc:
             log.debug('recreating session because of exception: %s: %s'
                       % (exc.__class__.__name__, exc))
             self.create()

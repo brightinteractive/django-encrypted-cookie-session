@@ -19,10 +19,10 @@ Adding it to your Django Project
 Here are some installation commands you can follow using the
 [pip](http://www.pip-installer.org/) installer.
 You'll need
-[Django](https://djangoproject.com/) 1.4.x or greater (tested through 1.8)
+[Django](https://djangoproject.com/) 1.4.x or greater (tested through 1.9)
 and [cryptography](https://cryptography.io/en/latest/)
 which are both automatically installed for you.
-Python 2.6 or higher is supported but Python 3 is untested.
+Python 2.6, 2.7, 3.3, 3.4, and 3.5 are supported.
 
 Install the module and its dependencies with pip:
 
@@ -197,6 +197,11 @@ To debug something weird, run it directly from the virtualenv like:
 
 Changelog
 =========
+
+3.1.0
+-----
+
+* Add support / testing for Python 3 (3.3, 3.4, and 3.5) and Django 1.9.
 
 3.0.1
 -----

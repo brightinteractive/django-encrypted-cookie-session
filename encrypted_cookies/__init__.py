@@ -6,6 +6,14 @@ import zlib
 
 import django.contrib.sessions.backends.signed_cookies
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+
+try:
+    # Django 1.5.x support
+    from django.contrib.sessions.serializers import JSONSerializer
+except ImportError:
+    # Legacy Django support
+    from django.core.signing import JSONSerializer
 try:
     # Django 1.5.x support
     from django.contrib.sessions.serializers import PickleSerializer
@@ -13,6 +21,7 @@ except ImportError:
     # Legacy Django support
     from django.contrib.sessions.backends.signed_cookies import PickleSerializer
 from django.core import signing
+
 try:
     from django.utils.six.moves import cPickle as pickle
 except ImportError:
@@ -22,17 +31,17 @@ from cryptography.fernet import InvalidToken
 
 from encrypted_cookies import crypto
 
-__version__ = '3.1.1'
+__version__ = '3.2.0'
 log = logging.getLogger(__name__)
 
 
-class EncryptingPickleSerializer(PickleSerializer):
+class BaseEncryptingSerializer(object):
     """
     Serialize/unserialize data with AES encryption using a secret key.
     """
 
     def dumps(self, obj):
-        raw_data = super(EncryptingPickleSerializer, self).dumps(obj)
+        raw_data = self._serializer.dumps(obj)
         if getattr(settings, 'COMPRESS_ENCRYPTED_COOKIE', False):
             level = getattr(settings, 'ENCRYPTED_COOKIE_COMPRESSION_LEVEL', 6)
             raw_data = zlib.compress(raw_data, level)
@@ -49,7 +58,37 @@ class EncryptingPickleSerializer(PickleSerializer):
                 log.warning('Could not decompress cookie value: %s: %s'
                             % (exc.__class__.__name__, exc))
 
-        return super(EncryptingPickleSerializer, self).loads(decrypted_data)
+        return self._serializer.loads(decrypted_data)
+
+    def __getattr__(self, attr):
+        return getattr(self._serializer, attr)
+
+
+class EncryptingPickleSerializer(BaseEncryptingSerializer):
+
+    def __init__(self):
+        self._serializer = PickleSerializer()
+
+
+class EncryptingJSONSerializer(BaseEncryptingSerializer):
+
+    def __init__(self):
+        self._serializer = JSONSerializer()
+
+
+_DEFAULT_SERIALIZER = 'pickle'
+
+def EncryptingSerializer():
+    # use the default if unset, or set to any Falsey value
+    serializer_setting = getattr(settings, 'ENCRYPTED_COOKIE_SERIALIZER',
+                                 None) or _DEFAULT_SERIALIZER
+    if serializer_setting == 'json':
+        return EncryptingJSONSerializer()
+    elif serializer_setting == 'pickle':
+        return EncryptingPickleSerializer()
+    else:
+        raise ImproperlyConfigured("Invalid encrypted cookie serializer: '%s'"
+                                   % serializer_setting)
 
 
 class SessionStore(django.contrib.sessions.backends.signed_cookies.SessionStore):
@@ -63,7 +102,7 @@ class SessionStore(django.contrib.sessions.backends.signed_cookies.SessionStore)
         try:
             return signing.loads(self.session_key,
                 # Create a signed cookie but with encrypted contents.
-                serializer=EncryptingPickleSerializer,
+                serializer=EncryptingSerializer,
                 max_age=settings.SESSION_COOKIE_AGE,
                 salt='encrypted_cookies')
         except (signing.BadSignature, pickle.UnpicklingError,
@@ -83,7 +122,7 @@ class SessionStore(django.contrib.sessions.backends.signed_cookies.SessionStore)
         session_cache = getattr(self, '_session_cache', {})
         data = signing.dumps(session_cache, compress=True,
             salt='encrypted_cookies',
-            serializer=EncryptingPickleSerializer)
+            serializer=EncryptingSerializer)
 
         cookie_size = len(data)
         log.debug('encrypted session cookie is %s bytes' % cookie_size)

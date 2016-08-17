@@ -56,6 +56,11 @@ Without it you might see a KeyError for session data because it
 won't be saving properly. Obviously, in production where you use
 an HTTPS URL you should make sure cookies are always secure.
 
+Optionally, you can opt to use JSON for serialization, rather
+than the default (pickle):
+
+    ENCRYPTED_COOKIE_SERIALIZER = 'json'
+
 Key Rotation
 ============
 
@@ -128,9 +133,9 @@ If you need to debug an issue with sessions on a live system,
 you can open a Python shell on the server and decrypt a cookie like this:
 
     from django.core import signing
-    from encrypted_cookies import EncryptingPickleSerializer
+    from encrypted_cookies import EncryptingSerializer
 
-    signing.loads("<cookie_value>", salt='encrypted_cookies', serializer=EncryptingPickleSerializer)
+    signing.loads("<cookie_value>", salt='encrypted_cookies', serializer=EncryptingSerializer)
 
 Writing Django Tests
 ====================
@@ -197,6 +202,11 @@ To debug something weird, run it directly from the virtualenv like:
 
 Changelog
 =========
+
+3.2.0
+-----
+
+* Add option to use JSON for serialization (pickle is still used by default)
 
 3.1.1
 -----

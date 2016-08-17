@@ -2,6 +2,7 @@
 # (c) 2013 Bright Interactive Limited. All rights reserved.
 # http://www.bright-interactive.com | info@bright-interactive.com
 
+from django.conf import settings
 from django.core import signing
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
@@ -22,6 +23,8 @@ except ImportError:
 
 from encrypted_cookies import (
     keygen,
+    EncryptingSerializer,
+    EncryptingJSONSerializer,
     EncryptingPickleSerializer,
     SessionStore,
 )
@@ -32,44 +35,76 @@ class Base(TestCase):
     pass
 
 
-class EncryptionTests(Base):
+class BaseSerializerTests(object):
 
-    def setUp(self):
-        self.pkl = EncryptingPickleSerializer()
 
     @override_settings(ENCRYPTED_COOKIE_KEYS=None)
     def test_empty_key_not_allowed(self):
         with self.assertRaises(ImproperlyConfigured):
-            self.pkl.dumps('summat')
+            self.serializer.dumps('summat')
 
     def test_encrypt_decrypt(self):
         plaintext_bytes = 'adsfasdfw34wras'
-        encrypted = self.pkl.dumps(plaintext_bytes)
+        encrypted = self.serializer.dumps(plaintext_bytes)
         self.assertNotEqual(plaintext_bytes, encrypted.decode('ascii'))
-        decrypted = self.pkl.loads(encrypted)
+        decrypted = self.serializer.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 
     @override_settings(ENCRYPTED_COOKIE_KEYS=['nope'])
     def test_incorrect_key_value(self):
         with self.assertRaises(ValueError):
-            self.pkl.dumps('summat')
+            self.serializer.dumps('summat')
 
     @override_settings(COMPRESS_ENCRYPTED_COOKIE=True)
     def test_compressed_encrypt_decrypt(self):
         plaintext_bytes = 'adsfasdfw34wras'
-        encrypted = self.pkl.dumps(plaintext_bytes)
+        encrypted = self.serializer.dumps(plaintext_bytes)
         self.assertNotEqual(plaintext_bytes, encrypted.decode('ascii'))
-        decrypted = self.pkl.loads(encrypted)
+        decrypted = self.serializer.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
 
     def test_recover_from_uncompressed_value(self):
         plaintext_bytes = 'adsfasdfw34wras'
         with override_settings(COMPRESS_ENCRYPTED_COOKIE=False):
-            encrypted = self.pkl.dumps(plaintext_bytes)
+            encrypted = self.serializer.dumps(plaintext_bytes)
         with override_settings(COMPRESS_ENCRYPTED_COOKIE=True):
             # Make sure this doesn't raise an exception.
-            decrypted = self.pkl.loads(encrypted)
+            decrypted = self.serializer.loads(encrypted)
         self.assertEqual(plaintext_bytes, decrypted)
+
+
+class PickleSerializerTests(BaseSerializerTests, Base):
+
+    def setUp(self):
+        self.serializer = EncryptingPickleSerializer()
+
+
+class JSONSerializerTests(BaseSerializerTests, Base):
+
+    def setUp(self):
+        self.serializer = EncryptingJSONSerializer()
+
+
+class SerializerSettingsTests(Base):
+
+    @override_settings(ENCRYPTED_COOKIE_SERIALIZER='json')
+    def test_json_setting(self):
+        self.assertIsInstance(EncryptingSerializer(), EncryptingJSONSerializer)
+
+    @override_settings(ENCRYPTED_COOKIE_SERIALIZER='pickle')
+    def test_pickle_setting(self):
+        self.assertIsInstance(EncryptingSerializer(), EncryptingPickleSerializer)
+
+    @override_settings()
+    def test_default_setting_is_pickle(self):
+        if hasattr(settings, 'ENCRYPTED_COOKIE_SERIALIZER'):
+            del settings.ENCRYPTED_COOKIE_SERIALIZER
+        self.assertIsInstance(EncryptingSerializer(), EncryptingPickleSerializer)
+
+    @override_settings(ENCRYPTED_COOKIE_SERIALIZER='clay_tablet')
+    def test_invalid_serializer_not_allowed(self):
+        with self.assertRaises(ImproperlyConfigured):
+            EncryptingSerializer()
 
 
 class SessionStoreTests(Base):
@@ -126,7 +161,7 @@ class SessionStoreTests(Base):
         # The ValueError is ignored and the session is reset.
         self.assertEqual(dict(stor.items()), {})
 
-    @mock.patch('encrypted_cookies.EncryptingPickleSerializer')
+    @mock.patch('encrypted_cookies.EncryptingSerializer')
     def test_use_encrypted_pickles(self, PicklerClass):
         pickler = mock.Mock()
         PicklerClass.return_value = pickler
